@@ -1,0 +1,127 @@
+﻿@page "/register"
+@using BlazorApp1.ViewModels
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+
+<EditForm class="form-control"  Model="registerModel" method="post" OnValidSubmit="@HandleRegister">
+    <DataAnnotationsValidator></DataAnnotationsValidator>
+    <div class="row">
+        <label class="form-label" for="email">Email</label>
+        <input class="form-control" id="email" @bind="registerModel.Email" />
+        <ValidationMessage For="() => registerModel.Email" ></ValidationMessage>
+    </div>
+    <div class="row">
+        <label class="form-label" for="password">Password</label>
+        <input id="password" class="form-control" @bind="registerModel.Password" type="password" />
+        <ValidationMessage For="() => registerModel.Password"></ValidationMessage>
+    </div>
+    <div class="row">
+        <label class="form-label" for="confirmPassword">Confirm Password</label>
+        <input id="confirmPassword" class="form-control" @bind="registerModel.ConfirmPassword" type="password" />
+        <ValidationMessage For="() => registerModel.ConfirmPassword"></ValidationMessage>
+    </div>
+
+    <div class="row">
+        <label class="form-label" for="SelectRole">Select Role</label>
+        <select class="form-select" @bind="registerModel.RoleName">
+            <option value=""> -- Select -- </option>
+
+            @if (lst_roles is not null)
+            {
+                @foreach (var item in lst_roles)
+                {
+                    <option value="@(item.Name)"> @item.Name </option>
+                }
+            }
+        </select>
+        <ValidationMessage For="() => registerModel.RoleName"></ValidationMessage>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-20">Register</button>
+</EditForm>
+
+@code {
+    [Inject] public NavigationManager navigationManager { set; get; }
+    [Inject] public UserManager<ApplicationUser> userManager { get; set; }
+    [Inject] public RoleManager<IdentityRole> roleManager { get; set; }
+    [Inject] public SweetAlertService sweetAlert { get; set; }
+    private RegisterRequestDTO registerModel = new RegisterRequestDTO();
+    private List<IdentityRole>? lst_roles = null;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        lst_roles = await roleManager.Roles.ToListAsync();
+
+        //return base.OnInitializedAsync();
+    }
+
+    private async Task HandleRegister()
+    {
+        
+        ApplicationUser applicationUser = new ApplicationUser
+            {
+                UserName = registerModel.Email,
+                Email = registerModel.Email,
+                FullName = "test name",
+                EmailConfirmed = true,
+                PhoneNumber = "010101010"
+            };
+
+        var res = await userManager.CreateAsync(applicationUser, registerModel.Password);
+
+        if (res.Succeeded)
+        {
+            var res_role = await userManager.AddToRoleAsync(applicationUser, registerModel.RoleName);
+            if (res_role.Succeeded)
+            {
+                var alert = await sweetAlert.FireAsync(new SweetAlertOptions
+                    {
+                        Title = "success",
+                        Text = $"User {registerModel.Email} Added Succesfully",
+                        Icon = SweetAlertIcon.Success,
+                        ConfirmButtonText = "Ok",
+                        ShowConfirmButton = true
+                    });
+                if (alert.IsConfirmed)
+                {
+                    navigationManager.NavigateTo("/login");
+                }
+            }
+            else
+            {
+                var alert = await sweetAlert.FireAsync(new SweetAlertOptions
+                    {
+                        Title = "Error",
+                        Text = res_role.Errors.FirstOrDefault().Description,
+                        Icon = SweetAlertIcon.Error,
+                        ConfirmButtonText = "Ok",
+                        ShowConfirmButton = true
+                    });
+                if(alert.IsConfirmed){
+                    navigationManager.NavigateTo("/register");
+                }
+            }
+        }
+        else
+        {
+            var alert = await sweetAlert.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Error",
+                    Text = res.Errors.FirstOrDefault().Description,
+                    Icon = SweetAlertIcon.Error,
+                    ConfirmButtonText = "Ok",
+                    ShowConfirmButton = true
+                });
+            if (alert.IsConfirmed)
+            {
+                navigationManager.NavigateTo("/register");
+            }
+        }
+
+    }
+
+}
+
+

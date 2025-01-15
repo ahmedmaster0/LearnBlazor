@@ -1,0 +1,90 @@
+﻿@page "/login"
+@using BlazorApp1.Authentication
+@using BlazorApp1.ViewModels
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+
+<EditForm class="form-control" Model="loginRequest" method="post" OnValidSubmit="@HandleLogin">
+    <DataAnnotationsValidator></DataAnnotationsValidator>
+    <div class="row">
+        <label class="form-label" for="email">Email</label>
+        <input class="form-control" id="email" @bind="loginRequest.Email" />
+        <ValidationMessage For="() => loginRequest.Email"></ValidationMessage>
+    </div>
+    <div class="row">
+        <label class="form-label" for="password">Password</label>
+        <input id="password" class="form-control" @bind="loginRequest.Password" type="password" />
+        <ValidationMessage For="() => loginRequest.Password"></ValidationMessage>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-20">Login</button>
+</EditForm>
+
+
+@code {
+
+    LoginRequestDTO loginRequest { get; set; } = new();
+    [Inject] SweetAlertService? sweetAlert { get; set; }
+    [Inject] AuthenticationStateProvider authenticationState { get; set; }
+    [Inject] UserManager<ApplicationUser> userManager { get; set; }
+    [Inject] NavigationManager navigationManager { get; set; }
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            ApplicationUser user = await userManager.FindByEmailAsync(loginRequest.Email);
+            if (user is not null)
+            {
+                var roles = await userManager.GetRolesAsync(user);
+
+                bool IsCorrectPassword = await userManager.CheckPasswordAsync(user, loginRequest.Password);
+                if (IsCorrectPassword)
+                {
+                    var _auth = (CustomAuthentication)authenticationState;
+                    await _auth.UpdateAuthenticateState(new UserSession
+                        {
+                            UserName = loginRequest.Email,
+                            Role = string.Join(',', roles)
+                        });
+
+                    navigationManager.NavigateTo("/", true);
+                }
+                else
+                {
+                    await sweetAlert.FireAsync(new SweetAlertOptions
+                        {
+                            Title = "Error",
+                            Text = "Incorrect Password !",
+                            Icon = SweetAlertIcon.Error,
+                            ConfirmButtonText = "Ok"
+                        });
+                }
+            }
+            else
+            {
+                await sweetAlert.FireAsync(new SweetAlertOptions
+                    {
+                        Title = "Error",
+                        Text = "User Not Found !",
+                        Icon = SweetAlertIcon.Error,
+                        ConfirmButtonText = "Ok"
+                    });
+            }
+
+        }
+        catch (Exception e)
+        {
+            await sweetAlert.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Error",
+                    Text = e.Message,
+                    Icon = SweetAlertIcon.Error,
+                    ConfirmButtonText = "Ok"
+                });
+        }
+    }
+}

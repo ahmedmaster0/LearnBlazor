@@ -1,0 +1,59 @@
+﻿@using BlazorApp1.Authentication
+@inherits LayoutComponentBase
+
+<PageTitle>BlazorApp1</PageTitle>
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <AuthorizeView>
+                <Authorized>
+                    <b> @UserEmail </b>
+
+                    <button class="btn btn-sm btn-danger" @onclick="Logout" >LogOut</button>
+                </Authorized>
+
+
+                <NotAuthorized>
+                    <a href="/login">Login</a>
+                    <a href="/register" >Register</a>
+                </NotAuthorized>
+
+
+            </AuthorizeView>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code{
+    [Parameter]
+    public string? UserEmail { get; set; } = string.Empty;
+
+
+    [Inject] AuthenticationStateProvider authenticationState{ get; set; }
+    [Inject] NavigationManager navigationManager{ get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var _auth = await ((CustomAuthentication)authenticationState).GetAuthenticationStateAsync();
+        if(_auth is not  null || _auth.User.Identity!.IsAuthenticated){
+            UserEmail = _auth.User.Identity!.Name;
+        }
+        //return base.OnInitializedAsync();
+    }
+
+    public async Task Logout(){
+        await ((CustomAuthentication)authenticationState).UpdateAuthenticateState(null);
+        navigationManager.NavigateTo("/login", true);
+    }
+
+}

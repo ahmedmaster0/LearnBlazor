@@ -1,0 +1,96 @@
+﻿@page "/users"
+@attribute [Authorize(Roles = "Admin")]
+
+@using BlazorApp1.ViewModels
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+
+<table class="table table-active table-bordered table-hover" @ref="tblData">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Email</th>
+            <th></th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @if (lst_users is null)
+        {
+            <tr>
+                <td colspan="12">
+                    <div class="alert alert-warning text-center"> Loading ......  </div>
+                </td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var item in lst_users)
+            {
+                <tr>
+                    <td>@item.Id</td>
+                    <td>@item.Email</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteUser(item.Id)"> Delete</button>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+
+@code {
+    public List<UserDTO> lst_users { get; set; } = new();
+
+    [Inject] UserManager<ApplicationUser> userManager { get; set; }
+    [Inject] SweetAlertService sweetAlert { get; set; }
+    [Inject] NavigationManager navigationManager { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetUsers();
+    }
+
+    private async Task GetUsers()
+    {
+        lst_users = await userManager.Users.Select(m => new UserDTO
+            {
+                Id = m.Id,
+                Email = m.Email
+            }).ToListAsync();
+    }
+
+    private async Task DeleteUser(string Id)
+    {
+        ApplicationUser applicationUser = await userManager.FindByIdAsync(Id);
+        IdentityResult identityResult = await userManager.DeleteAsync(applicationUser);
+        if (identityResult.Succeeded)
+        {
+            var alert = await sweetAlert.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Success",
+                    Text = "Deleted Successfully",
+                    Icon = SweetAlertIcon.Success,
+                    ConfirmButtonText = "Ok"
+                });
+            if (alert.IsConfirmed)
+            {
+                StateHasChanged();
+                //navigationManager.NavigateTo("/users",true);
+            }
+        }
+        else
+        {
+            await sweetAlert.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Error",
+                    Text = identityResult.Errors.FirstOrDefault().Description,
+                    Icon = SweetAlertIcon.Error,
+                    ConfirmButtonText = "Ok"
+                });
+        }
+
+    }
+}
