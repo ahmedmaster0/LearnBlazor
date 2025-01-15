@@ -5,11 +5,14 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 
-<table class="table table-active table-bordered table-hover" @ref="tblData">
+<table class="table table-active table-bordered table-hover">
     <thead>
         <tr>
             <th>Id</th>
             <th>Email</th>
+            <th>Full Name</th>
+            <th>Phone</th>
+            <th></th>
             <th></th>
         </tr>
     </thead>
@@ -30,6 +33,11 @@
                 <tr>
                     <td>@item.Id</td>
                     <td>@item.Email</td>
+                    <td>@item.FullName</td>
+                    <td>@item.Phone</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="() => EditUser(item.Id)"> Edit</button>
+                    </td>
                     <td>
                         <button class="btn btn-sm btn-danger" @onclick="() => DeleteUser(item.Id)"> Delete</button>
                     </td>
@@ -39,14 +47,45 @@
     </tbody>
 </table>
 
+@if (CanEdit)
+{
+    <EditForm Model="edituserDTO" OnValidSubmit="EditPostUser">
+        <DataAnnotationsValidator></DataAnnotationsValidator>
+        <div class="row">
+            <label class="form-label" for="email">Email</label>
+            <input class="form-control" id="email" @bind="edituserDTO.Email" />
+            <ValidationMessage For="() => edituserDTO.Email"></ValidationMessage>
+        </div>
+        <div class="row">
+            <label class="form-label" for="FullName">Full Name</label>
+            <input class="form-control" id="FullName" @bind="edituserDTO.FullName" />
+            <ValidationMessage For="() => edituserDTO.FullName"></ValidationMessage>
+        </div>
+        <div class="row">
+            <label class="form-label" for="Phone">Phone</label>
+            <input class="form-control" id="Phone" @bind="edituserDTO.Phone" />
+            <ValidationMessage For="() => edituserDTO.Phone"></ValidationMessage>
+        </div>
+        <button type="submit" class="btn btn-primary mt-20">Edit User</button>
+    </EditForm>
+}
+
+
 
 @code {
+    public EditUserDTO edituserDTO { get; set; } = new();
     public List<UserDTO> lst_users { get; set; } = new();
+
+    [Parameter]
+    public bool CanEdit { get; set; } = false;
+
+
+
 
     [Inject] UserManager<ApplicationUser> userManager { get; set; }
     [Inject] SweetAlertService sweetAlert { get; set; }
     [Inject] NavigationManager navigationManager { get; set; }
-
+    [Inject] ApplicationContext context{ get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -55,11 +94,14 @@
 
     private async Task GetUsers()
     {
-        lst_users = await userManager.Users.Select(m => new UserDTO
+        lst_users.Clear();
+        lst_users.AddRange(await userManager.Users.Select(m => new UserDTO
             {
                 Id = m.Id,
-                Email = m.Email
-            }).ToListAsync();
+                Email = m.Email,
+                FullName = m.FullName,
+                Phone = m.PhoneNumber
+            }).ToListAsync());
     }
 
     private async Task DeleteUser(string Id)
@@ -77,8 +119,8 @@
                 });
             if (alert.IsConfirmed)
             {
-                StateHasChanged();
-                //navigationManager.NavigateTo("/users",true);
+                await GetUsers();
+                //StateHasChanged();
             }
         }
         else
@@ -92,5 +134,72 @@
                 });
         }
 
+    }
+
+    private async Task EditUser(string Id)
+    {
+        ApplicationUser applicationUser = await userManager.FindByIdAsync(Id);
+        edituserDTO.Id = applicationUser.Id;
+        edituserDTO.Email = applicationUser.Email;
+        edituserDTO.FullName = applicationUser.FullName;
+        edituserDTO.Phone = applicationUser.PhoneNumber;
+
+
+
+        CanEdit = true;
+    }
+
+    private async Task EditPostUser()
+    {
+        try{
+
+            ApplicationUser applicationUser = new ApplicationUser
+                {
+                    Id = edituserDTO.Id,
+                    Email = edituserDTO.Email,
+                    UserName = edituserDTO.Email,
+                    FullName = edituserDTO.FullName,
+                    PhoneNumber = edituserDTO.Phone
+                };
+            context.ChangeTracker.Clear();
+
+            var identityResult = context.applicationUsers.Update(applicationUser);
+
+            if (identityResult.State == EntityState.Modified)
+            {
+                var alert = await sweetAlert.FireAsync(new SweetAlertOptions
+                    {
+                        Title = "Success",
+                        Text = "Edited Successfully",
+                        Icon = SweetAlertIcon.Success,
+                        ConfirmButtonText = "Ok"
+                    });
+                if (alert.IsConfirmed)
+                {
+                    await GetUsers();
+                }
+            }
+            else
+            {
+                await sweetAlert.FireAsync(new SweetAlertOptions
+                    {
+                        Title = "Error",
+                        Text = "errorrrrrrrrrs",
+                        Icon = SweetAlertIcon.Error,
+                        ConfirmButtonText = "Ok"
+                    });
+            }
+        }
+        catch(Exception e)
+        {
+            await sweetAlert.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Error",
+                    Text = e.Message,
+                    Icon = SweetAlertIcon.Error,
+                    ConfirmButtonText = "Ok"
+                });
+        }
+     
     }
 }
