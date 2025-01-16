@@ -14,6 +14,7 @@
             <th>Phone</th>
             <th></th>
             <th></th>
+            <th></th>
         </tr>
     </thead>
 
@@ -36,16 +37,26 @@
                     <td>@item.FullName</td>
                     <td>@item.Phone</td>
                     <td>
-                        <button class="btn btn-sm btn-primary" @onclick="() => EditUser(item.Id)"> Edit</button>
+                        <AuthorizeView Policy="CanEditUser">
+                            <button class="btn btn-sm btn-primary" @onclick="() => EditUser(item.Id)"> Edit</button>
+                        </AuthorizeView>
                     </td>
                     <td>
-                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteUser(item.Id)"> Delete</button>
+                        <button class="btn btn-sm btn-primary" @onclick="() => GetPermissions(item.Id)"> Add Permission</button>
+                    </td>
+                    <td>
+                        <AuthorizeView Roles="Admin" Policy="CanDeleteUser">
+                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteUser(item.Id)"> Delete</button>
+                        </AuthorizeView>
+                        
                     </td>
                 </tr>
             }
         }
     </tbody>
 </table>
+
+<CustomLoading IsLoading="@_isLoading"></CustomLoading>
 
 @if (CanEdit)
 {
@@ -70,9 +81,10 @@
     </EditForm>
 }
 
-
-
 @code {
+
+    public bool _isLoading { get; set; } = false;
+
     public EditUserDTO edituserDTO { get; set; } = new();
     public List<UserDTO> lst_users { get; set; } = new();
 
@@ -80,16 +92,21 @@
     public bool CanEdit { get; set; } = false;
 
 
-
-
     [Inject] UserManager<ApplicationUser> userManager { get; set; }
     [Inject] SweetAlertService sweetAlert { get; set; }
     [Inject] NavigationManager navigationManager { get; set; }
-    [Inject] ApplicationContext context{ get; set; }
+    [Inject] ApplicationContext context { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        _isLoading = true;
         await GetUsers();
+        ShowSpinner(false);
+    }
+    private void ShowSpinner(bool isLoading)
+    {
+        _isLoading = isLoading;
+        StateHasChanged();
     }
 
     private async Task GetUsers()
@@ -106,10 +123,13 @@
 
     private async Task DeleteUser(string Id)
     {
+        _isLoading = true;
+
         ApplicationUser applicationUser = await userManager.FindByIdAsync(Id);
         IdentityResult identityResult = await userManager.DeleteAsync(applicationUser);
         if (identityResult.Succeeded)
         {
+            ShowSpinner(false);
             var alert = await sweetAlert.FireAsync(new SweetAlertOptions
                 {
                     Title = "Success",
@@ -120,11 +140,11 @@
             if (alert.IsConfirmed)
             {
                 await GetUsers();
-                //StateHasChanged();
             }
         }
         else
         {
+            ShowSpinner(false);
             await sweetAlert.FireAsync(new SweetAlertOptions
                 {
                     Title = "Error",
@@ -138,6 +158,8 @@
 
     private async Task EditUser(string Id)
     {
+        _isLoading = true;
+
         ApplicationUser applicationUser = await userManager.FindByIdAsync(Id);
         edituserDTO.Id = applicationUser.Id;
         edituserDTO.Email = applicationUser.Email;
@@ -147,26 +169,25 @@
 
 
         CanEdit = true;
+        ShowSpinner(false);
     }
 
     private async Task EditPostUser()
     {
-        try{
+        try
+        {
+            _isLoading = true;
 
-            ApplicationUser applicationUser = new ApplicationUser
-                {
-                    Id = edituserDTO.Id,
-                    Email = edituserDTO.Email,
-                    UserName = edituserDTO.Email,
-                    FullName = edituserDTO.FullName,
-                    PhoneNumber = edituserDTO.Phone
-                };
-            context.ChangeTracker.Clear();
+            ApplicationUser applicationUser = await userManager.FindByIdAsync(edituserDTO.Id);
+            applicationUser.Email = edituserDTO.Email;
+            applicationUser.FullName = edituserDTO.FullName;
+            applicationUser.PhoneNumber = edituserDTO.Phone;
 
-            var identityResult = context.applicationUsers.Update(applicationUser);
-
-            if (identityResult.State == EntityState.Modified)
+            var result = await userManager.UpdateAsync(applicationUser);
+            if (result.Succeeded)
             {
+                CanEdit = false;
+                ShowSpinner(false);
                 var alert = await sweetAlert.FireAsync(new SweetAlertOptions
                     {
                         Title = "Success",
@@ -181,6 +202,7 @@
             }
             else
             {
+                ShowSpinner(false);
                 await sweetAlert.FireAsync(new SweetAlertOptions
                     {
                         Title = "Error",
@@ -190,8 +212,9 @@
                     });
             }
         }
-        catch(Exception e)
+        catch (Exception e)
         {
+            ShowSpinner(false);
             await sweetAlert.FireAsync(new SweetAlertOptions
                 {
                     Title = "Error",
@@ -200,6 +223,10 @@
                     ConfirmButtonText = "Ok"
                 });
         }
-     
+
+    }
+
+    private void GetPermissions(string userId){
+        navigationManager.NavigateTo($"/Permissions/{userId}");
     }
 }

@@ -1,0 +1,23 @@
+﻿
+@page "/Permissions/{userId}"
+@attribute [Authorize(Roles ="Admin")]
+
+
+<h3>Permissions</h3>
+
+Came From Users Page :  @UserId
+
+<ul role="listbox" tabindex="0" aria-label="email list">
+
+    @foreach (var item in lst_permissions)
+    {
+        <li tabindex="-1" role="option" aria-checked="false">
+            <input tabindex="-1" type="checkbox" value="@item" id="@item" class="form-check-input">
+            <label class="form-check-label" for="@item"> @item </label>
+        </li>
+    }
+</ul>
+
+
+
+

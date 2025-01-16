@@ -23,8 +23,11 @@
     <button type="submit" class="btn btn-primary mt-20">Login</button>
 </EditForm>
 
+<CustomLoading IsLoading="@_IsLoading" />
 
 @code {
+
+    public bool _IsLoading { get; set; } = false;
 
     LoginRequestDTO loginRequest { get; set; } = new();
     [Inject] SweetAlertService? sweetAlert { get; set; }
@@ -34,6 +37,7 @@
 
     private async Task HandleLogin()
     {
+        _IsLoading = true;
         try
         {
             ApplicationUser user = await userManager.FindByEmailAsync(loginRequest.Email);
@@ -45,16 +49,24 @@
                 if (IsCorrectPassword)
                 {
                     var _auth = (CustomAuthentication)authenticationState;
-                    await _auth.UpdateAuthenticateState(new UserSession
+
+                    var lst_claims = await userManager.GetClaimsAsync(user);
+                    if(await userManager.IsInRoleAsync(user,"Admin")){
+                        lst_claims.Add(new Claim("Permission", "Permission.EditUserPolicy"));
+                        lst_claims.Add(new Claim("Permission", "Permission.DeleteUserPolicy"));
+                    }
+                     await _auth.UpdateAuthenticateState(new UserSession
                         {
                             UserName = loginRequest.Email,
-                            Role = string.Join(',', roles)
-                        });
+                            Role = string.Join(',', roles),
+                            Permissions = string.Join(',',lst_claims.Select(m => m.Value).ToList())
+                            });
 
-                    navigationManager.NavigateTo("/", true);
+                    navigationManager.NavigateTo("/");
                 }
                 else
                 {
+                    ShowSpinner(false);
                     await sweetAlert.FireAsync(new SweetAlertOptions
                         {
                             Title = "Error",
@@ -66,6 +78,7 @@
             }
             else
             {
+                ShowSpinner(false);
                 await sweetAlert.FireAsync(new SweetAlertOptions
                     {
                         Title = "Error",
@@ -78,6 +91,7 @@
         }
         catch (Exception e)
         {
+            ShowSpinner(false);
             await sweetAlert.FireAsync(new SweetAlertOptions
                 {
                     Title = "Error",
@@ -86,5 +100,13 @@
                     ConfirmButtonText = "Ok"
                 });
         }
+    }
+
+
+
+    private void ShowSpinner(bool isLoading)
+    {
+        _IsLoading = isLoading;
+        StateHasChanged();
     }
 }

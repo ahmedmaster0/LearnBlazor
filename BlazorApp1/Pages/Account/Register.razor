@@ -40,7 +40,12 @@
     <button type="submit" class="btn btn-primary mt-20">Register</button>
 </EditForm>
 
+
+<CustomLoading IsLoading="@_isLoading"></CustomLoading>
+
 @code {
+
+    public bool _isLoading { get; set; } = false;
     [Inject] public NavigationManager navigationManager { set; get; }
     [Inject] public UserManager<ApplicationUser> userManager { get; set; }
     [Inject] public RoleManager<IdentityRole> roleManager { get; set; }
@@ -51,15 +56,25 @@
 
     protected override async Task OnInitializedAsync()
     {
+        _isLoading = true;
 
         lst_roles = await roleManager.Roles.ToListAsync();
+
+        ShowSpinner(false);
 
         //return base.OnInitializedAsync();
     }
 
+    private void ShowSpinner(bool isLoading)
+    {
+        _isLoading = isLoading;
+        StateHasChanged();
+    }
+
     private async Task HandleRegister()
     {
-        
+        _isLoading = true;
+
         ApplicationUser applicationUser = new ApplicationUser
             {
                 UserName = registerModel.Email,
@@ -76,6 +91,7 @@
             var res_role = await userManager.AddToRoleAsync(applicationUser, registerModel.RoleName);
             if (res_role.Succeeded)
             {
+                ShowSpinner(false);
                 var alert = await sweetAlert.FireAsync(new SweetAlertOptions
                     {
                         Title = "success",
@@ -91,6 +107,7 @@
             }
             else
             {
+                ShowSpinner(false);
                 var alert = await sweetAlert.FireAsync(new SweetAlertOptions
                     {
                         Title = "Error",
@@ -106,6 +123,7 @@
         }
         else
         {
+            ShowSpinner(false);
             var alert = await sweetAlert.FireAsync(new SweetAlertOptions
                 {
                     Title = "Error",

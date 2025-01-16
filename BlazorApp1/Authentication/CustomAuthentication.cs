@@ -17,14 +17,19 @@ namespace BlazorApp1.Authentication
         {
             ClaimsPrincipal claimsPrincipal;
 
-            if(userSession is not null)
+            if (userSession is not null)
             {
                 await _sessionStorage.SetAsync("UserSession", userSession);
-                claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim>
+
+                var _claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name,userSession.UserName),
                     new Claim(ClaimTypes.Role,userSession.Role),
-                }));
+                    new Claim("Permission",userSession.Permissions)
+                };
+
+                claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(_claims));
+
             }
             else
             {
@@ -42,11 +47,13 @@ namespace BlazorApp1.Authentication
                 var _userSession = _sessionResult.Success ? _sessionResult.Value : null;
                 if (_userSession == null) return await Task.FromResult(new AuthenticationState(_anynoums));
 
-                var claimPrincple = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim>
+                var _claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name,_userSession.UserName),
                 new Claim(ClaimTypes.Role,_userSession.Role),
-            }, "CustomAuth"));
+                new Claim("Permission",_userSession.Permissions),
+            };
+                var claimPrincple = new ClaimsPrincipal(new ClaimsIdentity(_claims, "CustomAuth"));
                 return await Task.FromResult(new AuthenticationState(claimPrincple));
             }
             catch (Exception ex)

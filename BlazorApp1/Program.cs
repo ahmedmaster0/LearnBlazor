@@ -1,9 +1,11 @@
 using BlazorApp1;
 using BlazorApp1.Authentication;
+using BlazorApp1.Authorization;
 using BlazorApp1.Data;
 using BlazorApp1.SeedData;
 using CurrieTechnologies.Razor.SweetAlert2;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.AspNetCore.Identity;
@@ -32,20 +34,20 @@ builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthentication>();
 
 builder.Services.AddSingleton<WeatherForecastService>();
 
-//Authentication Register
-//builder.Services.AddAuthentication(op =>
-//{
-//    op.RequireAuthenticatedSignIn = false;
-//})
-//    .AddCookie(op =>
-//{
-//    op.Cookie.Name = "cookieToken";
-//    op.LoginPath = "/login";
-//    op.AccessDeniedPath = "/accessDenied";
-//    op.Cookie.MaxAge = TimeSpan.FromMinutes(30);
-//});
-//builder.Services.AddAuthorization();
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, PolicyProvider>(); // to search for registered Policy 
+builder.Services.AddSingleton<IAuthorizationHandler, CustomHandler>();
 
+builder.Services.AddAuthorization(op =>
+{
+    op.AddPolicy("Admin", policy =>
+    {
+        policy.Requirements.Add(new CustomRequirement("Permission.EditUserPolicy"));
+        policy.Requirements.Add(new CustomRequirement("Permission.DeleteUserPolicy"));
+    });
+   op.AddPolicy("CanEditUser", policy => policy.Requirements.Add(new CustomRequirement("Permission.EditUserPolicy")));
+
+   op.AddPolicy("CanDeleteUser", policy => policy.Requirements.Add(new CustomRequirement("Permission.DeleteUserPolicy")));
+});
 
 builder.Services.AddSweetAlert2();
 
