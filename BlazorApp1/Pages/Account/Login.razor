@@ -51,10 +51,10 @@
                     var _auth = (CustomAuthentication)authenticationState;
 
                     var lst_claims = await userManager.GetClaimsAsync(user);
-                    if(await userManager.IsInRoleAsync(user,"Admin")){
-                        lst_claims.Add(new Claim("Permission", "Permission.EditUserPolicy"));
-                        lst_claims.Add(new Claim("Permission", "Permission.DeleteUserPolicy"));
-                    }
+                    // if(await userManager.IsInRoleAsync(user,"Admin")){
+                    //     lst_claims.Add(new Claim("Permission", "Permission.EditUserPolicy"));
+                    //     lst_claims.Add(new Claim("Permission", "Permission.DeleteUserPolicy"));
+                    // }
                      await _auth.UpdateAuthenticateState(new UserSession
                         {
                             UserName = loginRequest.Email,
@@ -62,7 +62,7 @@
                             Permissions = string.Join(',',lst_claims.Select(m => m.Value).ToList())
                             });
 
-                    navigationManager.NavigateTo("/");
+                    navigationManager.NavigateTo("/",true);
                 }
                 else
                 {

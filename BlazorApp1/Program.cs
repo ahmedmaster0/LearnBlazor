@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<ApplicationContext>(options =>
@@ -39,17 +40,21 @@ builder.Services.AddSingleton<IAuthorizationHandler, CustomHandler>();
 
 builder.Services.AddAuthorization(op =>
 {
-    op.AddPolicy("Admin", policy =>
-    {
-        policy.Requirements.Add(new CustomRequirement("Permission.EditUserPolicy"));
-        policy.Requirements.Add(new CustomRequirement("Permission.DeleteUserPolicy"));
-    });
-   op.AddPolicy("CanEditUser", policy => policy.Requirements.Add(new CustomRequirement("Permission.EditUserPolicy")));
+    //op.AddPolicy("Admin", policy =>
+    //{
+    //    policy.Requirements.Add(new CustomRequirement("CanEditUser"));
+    //    policy.Requirements.Add(new CustomRequirement("CanDeleteUser"));
+    //    policy.Requirements.Add(new CustomRequirement("CanAddPermission"));
+    //});
+   op.AddPolicy("CanEditUser", policy => policy.Requirements.Add(new CustomRequirement("CanEditUser")));
 
-   op.AddPolicy("CanDeleteUser", policy => policy.Requirements.Add(new CustomRequirement("Permission.DeleteUserPolicy")));
+   op.AddPolicy("CanDeleteUser", policy => policy.Requirements.Add(new CustomRequirement("CanDeleteUser")));
+
+   op.AddPolicy("CanAddPermission", policy => policy.Requirements.Add(new CustomRequirement("CanAddPermission")));
 });
 
 builder.Services.AddSweetAlert2();
+builder.Services.AddBlazorBootstrap();
 
 var app = builder.Build();
 

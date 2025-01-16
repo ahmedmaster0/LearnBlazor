@@ -4,6 +4,8 @@ namespace BlazorApp1.Pages
 {
     public partial class CustomLoading
     {
-        [Parameter] public bool IsLoading { get; set; } = false;
+        [EditorRequired]
+        [Parameter]
+        public bool IsLoading { get; set; } = false;
     }
 }

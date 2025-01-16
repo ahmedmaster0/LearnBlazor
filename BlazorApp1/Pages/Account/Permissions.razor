@@ -8,16 +8,23 @@
 Came From Users Page :  @UserId
 
 <ul role="listbox" tabindex="0" aria-label="email list">
-
+    <li tabindex="-1" role="option" aria-checked="false">
+        <input tabindex="-1" type="checkbox" @bind="SelectAllCheckBox" @onclick="fun_SelectAllCheckBox" value="all" id="all" class="form-check-input">
+        <label class="form-check-label" for="all"> Select All </label>
+    </li>
     @foreach (var item in lst_permissions)
     {
         <li tabindex="-1" role="option" aria-checked="false">
-            <input tabindex="-1" type="checkbox" value="@item" id="@item" class="form-check-input">
-            <label class="form-check-label" for="@item"> @item </label>
+            <input tabindex="-1" type="checkbox" @bind="@item.IsActive" value="@item.text" id="@item.text" class="form-check-input">
+            <label class="form-check-label" for="@item.text"> @item.text </label>
         </li>
     }
+
+
+    <button class="btn btn-sm btn-secondary" @onclick="AssignPermission"> Add </button>
+
 </ul>
 
 
-
+<CustomLoading IsLoading="@_isLoading" />
 
