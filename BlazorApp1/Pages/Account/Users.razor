@@ -6,7 +6,8 @@
 @using Microsoft.EntityFrameworkCore
 
 
-<Grid TItem="UserDTO"
+<Grid @ref="Usersgrid"
+      TItem="UserDTO"
       Class="table table-hover table-bordered table-striped"
       Style="--bb-table-selected-row-color: #fff;--bb-table-selected-row-background-color: #4c0bce;--bb-table-selected-row-hover-color: #fff;--bb-table-selected-row-hover-background-color: #4c0bce;"
       HeaderRowCssClass="bg-primary text-white border-bottom-0"
@@ -45,6 +46,17 @@
         </GridColumn>
         <GridColumn TItem="UserDTO" HeaderText="Phone" PropertyName="Phone" SortKeySelector="m => m.Phone">
             @context.Phone
+        </GridColumn>
+        <GridColumn TItem="UserDTO" HeaderText="Operations"  >
+            <Button Class="btn btn-sm btn-primary" @onclick="() => EditUser(context.Id)">
+                <Icon Name="IconName.Pencil" />
+            </Button> |
+            <Button Class="btn btn-sm btn-secondary" @onclick="() => GetPermissions(context.Id)">
+                <Icon Name="IconName.ShieldFillCheck" />
+            </Button> |
+            <Button Class="btn btn-sm btn-danger" @onclick="() => DeleteUser(context.Id)" title="Delete">
+                <Icon Name="IconName.Trash" />
+            </Button>
         </GridColumn>
     </GridColumns>
     <GridTemplates>
@@ -88,6 +100,7 @@
 
     public bool _isLoading { get; set; } = false;
 
+    Grid<UserDTO> Usersgrid = default!;
     public EditUserDTO edituserDTO { get; set; } = new();
     public List<UserDTO> lst_users { get; set; } = new();
     public HashSet<UserDTO> selecteusers = new();
@@ -102,15 +115,6 @@
     [Inject] ApplicationContext context { get; set; }
     [Inject] ModalService ModalService { get; set; } = default!;
 
-
-    protected override async Task OnInitializedAsync()
-    {
-        _isLoading = true;
-        lst_users.Clear();
-        lst_users = await GetUsers();
-        ShowSpinner(false);
-    }
-
     private void ShowSpinner(bool isLoading)
     {
         _isLoading = isLoading;
@@ -119,7 +123,8 @@
 
     private async Task<GridDataProviderResult<UserDTO>> EmployeesDataProvider(GridDataProviderRequest<UserDTO> request)
     {
-        return await Task.FromResult(request.ApplyTo(lst_users));
+        var lst = await GetUsers();
+        return await Task.FromResult(request.ApplyTo(lst));
     }
 
     private async Task<List<UserDTO>> GetUsers()
@@ -151,7 +156,7 @@
                 });
             if (alert.IsConfirmed)
             {
-                await GetUsers();
+                await Usersgrid.RefreshDataAsync();
             }
         }
         else
@@ -209,7 +214,7 @@
                     });
                 if (alert.IsConfirmed)
                 {
-                    await GetUsers();
+                    await Usersgrid.RefreshDataAsync();
                 }
             }
             else

@@ -6,9 +6,9 @@ namespace BlazorApp1.Authentication
 {
     public class CustomAuthentication : AuthenticationStateProvider
     {
-        private readonly ProtectedSessionStorage _sessionStorage;
+        private readonly ProtectedLocalStorage _sessionStorage;
         private ClaimsPrincipal _anynoums = new ClaimsPrincipal(new ClaimsIdentity());
-        public CustomAuthentication(ProtectedSessionStorage sessionStorage)
+        public CustomAuthentication(ProtectedLocalStorage sessionStorage)
         {
             _sessionStorage = sessionStorage;
         }
